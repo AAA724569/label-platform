@@ -23,10 +23,11 @@ import pandas as pd
 import streamlit as st
 
 # ─── 路径常量 ─────────────────────────────────────────────────────────
-INDEX_FILE   = Path("/home/stu6/projects/LabelWork1/sessions_index.json")
-DB_FILE      = "/home/stu6/projects/LabelWork1/label_platform.db"
-AUTO_DB_FILE = "/home/stu6/projects/LabelWork1/auto_labeled.db"
-UPLOAD_DIR   = Path("/home/stu6/projects/LabelWork1/uploaded_images")
+_BASE = Path(__file__).parent
+INDEX_FILE   = _BASE / "sessions_index.json"
+DB_FILE      = str(_BASE / "label_platform.db")
+AUTO_DB_FILE = str(_BASE / "auto_labeled.db")
+UPLOAD_DIR   = _BASE / "uploaded_images"
 
 # ─── 配色 ─────────────────────────────────────────────────────────────
 BLUE = ["#1a56a8","#059669","#d97706","#7c3aed",
