@@ -17,6 +17,7 @@ import base64
 import io
 import json
 import os
+os.environ.setdefault("ANTHROPIC_API_KEY", "sk-3iebUvSCeu1TO0F5JYJl23BE0U0VKBnLOjShTEfI8ZM34DMb")
 import re
 import sqlite3
 import threading
@@ -29,9 +30,9 @@ from pathlib import Path
 import anthropic
 from PIL import Image
 
-INDEX_FILE = "/home/stu1/Projects/LabelWork/sessions_index.json"
-OUTPUT_DB = "/home/stu1/Projects/LabelWork/auto_labeled.db"
-CACHE_FILE = "/home/stu1/Projects/LabelWork/vlm_cache.json"  # 断点续跑缓存
+INDEX_FILE = "/home/stu6/projects/LabelWork1/sessions_index.json"
+OUTPUT_DB = "/home/stu6/projects/LabelWork1/auto_labeled.db"
+CACHE_FILE = "/home/stu6/projects/LabelWork1/vlm_cache.json"  # 断点续跑缓存
 # MODEL = "claude-opus-4-6"
 MODEL = "claude-haiku-4-5-20251001"
 
@@ -554,7 +555,7 @@ def main():
         print("❌ 请先设置 ANTHROPIC_API_KEY 或 ANTHROPIC_AUTH_TOKEN 环境变量")
         return
 
-    base_url = os.environ.get("ANTHROPIC_BASE_URL")
+    base_url = os.environ.get("ANTHROPIC_BASE_URL", "https://api.mczbc.cn")
     client_kwargs = {"api_key": api_key}
     if base_url:
         client_kwargs["base_url"] = base_url
@@ -649,16 +650,18 @@ def main():
     print("\n[一致性约束处理中...]")
     labeled = enforce_consistency(labeled)
 
-    # Step C: 写入 DB
+    # Step C: 增量写入 DB（跳过已存在的 folder_path，不清空旧数据）
     print(f"\n[写入数据库: {OUTPUT_DB}]")
     conn = init_db(OUTPUT_DB)
-    # 清空旧数据
-    conn.execute("DELETE FROM dataset")
-    conn.commit()
-    conn.execute("BEGIN")
-    for s in labeled:
-        write_to_db(conn, s)
-    conn.commit()
+    existing = {r[0] for r in conn.execute("SELECT folder_path FROM dataset").fetchall()}
+    print(f"  DB 已有 {len(existing)} 条记录")
+    new_records = [s for s in labeled if s["folder_path"] not in existing]
+    print(f"  本次新增: {len(new_records)} 条")
+    if new_records:
+        conn.execute("BEGIN")
+        for s in new_records:
+            write_to_db(conn, s)
+        conn.commit()
     conn.close()
 
     print(f"✅ 数据库生成完成: {OUTPUT_DB}")
